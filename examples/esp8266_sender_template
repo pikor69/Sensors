@@ -1,0 +1,80 @@
+//espnow sender/sensor for 8266
+
+#include <ESP8266WiFi.h>
+#include <espnow.h>
+
+uint8_t receiverAddress[] = {0x20, 0x24, 0x15, 0x22, 0x29, 0x89}; //change as needed
+
+#include <ArduinoJson.h>
+
+String jsondata;
+StaticJsonDocument<200> doc;
+
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println();
+
+  WiFi.mode(WIFI_STA);
+
+  setupEspNow();
+}
+
+void setupEspNow() {  
+  if (esp_now_init() != 0) {
+    Serial.println("Error initializing ESP-NOW");
+    delay(1000);
+    ESP.restart();
+  }
+
+  esp_now_set_self_role(ESP_NOW_ROLE_CONTROLLER);
+  esp_now_register_send_cb(onDataSent);
+  
+  int status = esp_now_add_peer(receiverAddress, ESP_NOW_ROLE_SLAVE, 1, NULL, 0);
+  if (status == 0) {
+    Serial.println("Adding peer succeeded");
+  } else {
+    Serial.println("Adding peer failed.");
+  }
+  pinMode(LED_BUILTIN, OUTPUT);
+}
+
+void onDataSent(uint8_t* mac_addr, uint8_t sendStatus) {
+  if (sendStatus == 0){
+    Serial.println("Delivery succeeded");
+  } else{
+    Serial.println("Delivery failed!");
+  }
+}
+
+
+void loop() {
+
+  jsondata = "";  //clearing String after data is being sent
+  
+  doc["sensorID"] = "test";   
+  doc["weather"]["temp"] = 7.3;
+  doc["weather"]["humidity"] = 43.2;
+  doc["weather"]["pressure"] = 997;
+  
+  serializeJson(doc, jsondata);  //Serializing JSON
+  Serial.println(jsondata);
+
+  int status = esp_now_send(receiverAddress, (uint8_t *) jsondata.c_str(), jsondata.length()+1);
+
+  Serial.println(jsondata.length());
+  digitalWrite(LED_BUILTIN, LOW);  
+  delay(100); 
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(100);
+  digitalWrite(LED_BUILTIN, LOW);  
+  delay(100);
+  digitalWrite(LED_BUILTIN, HIGH);
+  if (status == 0) {
+    Serial.println("Sending message succeeded");
+  } else {
+    Serial.println("Sending message failed");
+  }
+
+  system_deep_sleep(5e6);
+}
