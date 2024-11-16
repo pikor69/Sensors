@@ -1,6 +1,6 @@
 # Sensors (ESPNow, MQTT, JSON)
 
-## ESP-based sensors using JSON for packet data and ESPNow &lt;> MQTT transmission.
+## ESP-based sensors using JSON for packet data and ESPNow to MQTT gateway.
 
 The basic setup consists of esp8266 or esp32-based sensors using ESPNow to transmit JSON packets to the MQTT Gateway.
 Gateway is made of two microcontrollers, one ESP-based receiving ESPNow packets and transmitting them over the serial connection to the MQTT Sender.
